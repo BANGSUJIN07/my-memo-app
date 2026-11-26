@@ -1,0 +1,78 @@
+/* 기획서·스크립트 페이지 공통 모양 (메모장과 같은 겨울 파스텔 색) */
+:root {
+  --bg: #e8f2fa; --panel: #ffffff; --main: #9fcbea; --main-dark: #78b0d9; --sub: #dcebf7;
+  --mint: #d4f1e4; --lilac: #e6e3f7; --text: #3f4a5c; --muted: #8794a8; --line: #dbe8f2;
+  --sky-top: #c6dcf0; --sky-bottom: #eef5fb; --header-bg: rgba(255,255,255,.9); --code-bg: #f3f8fc;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #2a3446; --panel: #1f2937; --main: #4f7fa8; --main-dark: #6a9cc8; --sub: #33465c;
+  --mint: #2f5a4a; --lilac: #3a3a5c; --text: #e4eaf2; --muted: #9aa7ba; --line: #364458;
+  --sky-top: #0f1b2d; --sky-bottom: #1d2c44; --header-bg: rgba(31,41,55,.9); --code-bg: #17202e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--text); line-height: 1.8;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%) fixed;
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+.top {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 24px;
+  background: var(--header-bg); border-bottom: 2px solid var(--line); position: sticky; top: 0; z-index: 2;
+}
+.top h1 { margin: 0; font-size: 18px; }
+.top nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.top nav a {
+  text-decoration: none; color: var(--text); background: var(--lilac); padding: 6px 14px;
+  border-radius: 999px; font-size: 14px;
+}
+.top nav a.on { background: var(--main); font-weight: bold; }
+.top nav a:hover { background: var(--sub); }
+.btn {
+  border: none; background: var(--sub); color: var(--text); border-radius: 10px; padding: 8px 14px;
+  font-size: 14px; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-block;
+}
+.btn:hover { background: var(--main); }
+#themeBtn { margin-left: auto; }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 56px; }
+.card {
+  background: var(--panel); border: 2px solid var(--line); border-radius: 16px;
+  padding: 28px 32px; margin-bottom: 20px;
+}
+.card h1 { font-size: 26px; margin: 0 0 8px; }
+.card h2 { font-size: 20px; margin: 32px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+.card h2:first-child, .card h1 + h2 { margin-top: 20px; }
+.card h3 { font-size: 16px; margin: 24px 0 8px; }
+.card p { margin: 8px 0; }
+.card ul, .card ol { margin: 8px 0; padding-left: 24px; }
+.card li { margin: 4px 0; }
+.card hr { border: none; border-top: 2px dashed var(--line); margin: 24px 0; }
+.card blockquote {
+  margin: 12px 0; padding: 10px 16px; background: var(--code-bg); color: var(--muted);
+  border-left: 4px solid var(--main); border-radius: 0 10px 10px 0; font-size: 14px;
+}
+.card code {
+  background: var(--code-bg); border-radius: 6px; padding: 1px 6px; font-size: .9em;
+  font-family: Consolas, "D2Coding", monospace;
+}
+.tbl { overflow-x: auto; margin: 12px 0; }
+.card table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.card th, .card td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+.card th { background: var(--sub); white-space: nowrap; }
+.card tbody tr:nth-child(even) td { background: var(--code-bg); }
+.note { color: var(--muted); font-size: 14px; }
+
+.file-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.file-head h2 { flex: 1; margin: 0 !important; border: none !important; padding: 0 !important; font-size: 18px !important; }
+pre {
+  background: var(--code-bg); border: 2px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0 0; max-height: 520px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+@media (max-width: 720px) {
+  .top { padding: 10px 12px; }
+  .card { padding: 18px 16px; }
+  .card h1 { font-size: 22px; }
+}

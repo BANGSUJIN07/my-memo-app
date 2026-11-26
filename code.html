@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스크립트 | 나만의 메모장</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+</head>
+<body>
+<header class="top">
+  <h1>❄️ 나만의 메모장</h1>
+  <nav>
+    <a href="memo.html">메모장 열기</a>
+    <a href="PRD.html">기획서</a>
+    <a href="code.html" class="on">스크립트</a>
+  </nav>
+  <button class="btn" id="themeBtn" title="다크 모드 켜기/끄기">🌙</button>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h1>실행 스크립트</h1>
+    <p>내 컴퓨터에서 메모장을 <b>로컬 웹</b>(<code>http://localhost:5000</code>)으로 열 때 쓰는 작은 프로그램 2개예요.</p>
+    <blockquote>인터넷(이 사이트)에서는 실행되지 않고, <b>내려받아서 Windows에서 실행</b>하는 용도예요. 설치할 것은 없고, Windows 기본 기능(PowerShell)만 써요. 두 파일을 같은 폴더에 두고 <code>memo.html</code>도 함께 넣어 주세요.</blockquote>
+  </section>
+  <div id="files"></div>
+</main>
+
+<script>
+  // 보여 줄 파일 목록: 여기에 항목을 추가하면 카드가 하나 더 생겨요
+  const FILES = [
+    { name: "start-memo.ps1", title: "start-memo.ps1 · 시작 스크립트",
+      desc: "서버가 꺼져 있으면 켜고, 브라우저로 메모장을 열어 줘요. 바탕화면 바로가기가 이 파일을 실행해요." },
+    { name: "serve.ps1", title: "serve.ps1 · 로컬 웹 서버",
+      desc: "이 폴더의 파일을 내 컴퓨터 주소(localhost)로 보여 주는 아주 작은 웹 서버예요. 폴더 밖의 파일은 열리지 않게 막아 둬요." }
+  ];
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;     // textContent라서 코드가 그대로 글자로 보여요
+    return e;
+  }
+
+  FILES.forEach(f => {
+    const card = el("section", "card");
+    const head = el("div", "file-head");
+    head.appendChild(el("h2", null, f.title));
+    const copy = el("button", "btn", "복사");
+    const dl = el("a", "btn", "내려받기"); dl.href = f.name; dl.download = f.name;
+    head.append(copy, dl);
+    card.append(head, el("p", "note", f.desc));
+    const pre = el("pre"); const code = el("code", null, "불러오는 중…");
+    pre.appendChild(code); card.appendChild(pre);
+    document.getElementById("files").appendChild(card);
+
+    fetch(f.name).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(t => { code.textContent = t; })
+      .catch(() => { code.textContent = "불러오지 못했어요. '내려받기'를 눌러 확인해 주세요."; });
+
+    copy.onclick = () => {
+      const done = ok => { copy.textContent = ok ? "복사됨 ✓" : "복사 실패"; setTimeout(() => copy.textContent = "복사", 1500); };
+      // 1순위: 최신 복사 기능, 안 되면 2순위: 임시 입력칸을 만들어 복사
+      const fallback = () => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = code.textContent; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          const ok = document.execCommand("copy"); ta.remove(); done(ok);
+        } catch (e) { done(false); }
+      };
+      try { navigator.clipboard.writeText(code.textContent).then(() => done(true), fallback); }
+      catch (e) { fallback(); }
+    };
+  });
+</script>
+</body>
+</html>
