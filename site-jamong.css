@@ -1,0 +1,95 @@
+/* 자몽 메모장 디자인: 기획서 페이지 모양 (memo-jamong.html과 같은 색, 디자인 시스템 '자몽 메모장' tokens.json 값) */
+:root {
+  --bg-100: #FFF8F0; --bg-200: #FFEDE0; --surface: #FFFFFF;
+  --ink: #3A1F1D; --ink-muted: #7A5550;
+  --grapefruit: #F2626B; --on-grapefruit: #3A1F1D; --grapefruit-deep: #C23A47;
+  --citrus: #FFB547; --peach: #FFD9C2; --mint: #4DB38A;
+  --line: #F3D5C8; --header-bg: rgba(255,255,255,.88);
+  --radius-sm: 8px; --radius-md: 16px; --radius-lg: 28px; --radius-pill: 999px;
+  --shadow-card: 0 6px 20px rgba(194,58,71,0.12);
+  --font-sans: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  --fruit: url("grapefruit-slice.svg");   /* 자몽 단면 그림 */
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-100: #22171A; --bg-200: #2D2024; --surface: #33262A;
+  --ink: #FBEDE6; --ink-muted: #CDAFA8;
+  --grapefruit: #FF8A91; --on-grapefruit: #2A1416; --grapefruit-deep: #FF8A91;
+  --citrus: #FFB547; --peach: #4A3238; --mint: #7FD9B3;
+  --line: #4A363B; --header-bg: rgba(51,38,42,.9);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--ink); font-family: var(--font-sans); font-size: 16px; line-height: 1.8; min-height: 100vh;
+  background: linear-gradient(160deg, var(--peach) 0%, var(--bg-100) 55%, var(--bg-200) 100%) fixed;
+}
+a { color: var(--grapefruit-deep); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* 배경 장식 (화면 맨 뒤, 클릭은 그대로 통과) */
+.deco { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.blob { position: absolute; border-radius: 50%; }
+.b1 { right: -90px; top: -90px; width: 320px; height: 320px; background: var(--grapefruit); opacity: .9; }
+.b2 { left: -70px; bottom: -80px; width: 240px; height: 240px; background: var(--citrus); opacity: .85; }
+.fruit { position: absolute; right: -70px; bottom: -60px; width: 360px; height: 360px;
+         background: var(--fruit) center / contain no-repeat; transform: rotate(-14deg); }
+
+.top {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 32px;
+  background: var(--header-bg); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.top h1 { margin: 0; font: 800 20px/28px var(--font-sans); display: flex; align-items: center; gap: 10px; }
+.logo { display: inline-block; width: 36px; height: 36px; flex: none; background: var(--fruit) center / contain no-repeat; }
+.top nav { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg-200); border-radius: var(--radius-pill); }
+.top nav a {
+  text-decoration: none; color: var(--ink-muted); padding: 7px 18px; border-radius: var(--radius-pill);
+  font: 600 15px var(--font-sans); white-space: nowrap;
+}
+.top nav a:hover { color: var(--ink); }
+.top nav a.on { background: var(--grapefruit); color: var(--on-grapefruit); font-weight: 700; }
+.btn {
+  border: 1.5px solid var(--grapefruit-deep); background: var(--surface); color: var(--grapefruit-deep);
+  border-radius: var(--radius-md); padding: 7px 14px; font: 700 15px var(--font-sans); cursor: pointer;
+}
+.btn:hover { background: var(--peach); }
+#themeBtn { margin-left: auto; }
+
+.wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 28px 16px 64px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  padding: 32px 36px; box-shadow: var(--shadow-card);
+}
+.card h1 { font: 800 30px/38px var(--font-sans); margin: 0 0 8px; }
+.card h2 { font: 700 21px/30px var(--font-sans); margin: 36px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.card h1 + h2, .card h2:first-child { margin-top: 22px; }
+.card h3 { font: 700 17px/26px var(--font-sans); margin: 24px 0 8px; }
+.card p { margin: 8px 0; }
+.card ul, .card ol { margin: 8px 0; padding-left: 24px; }
+.card li { margin: 4px 0; }
+.card li::marker { color: var(--grapefruit-deep); }
+.card hr { border: none; border-top: 2px dashed var(--line); margin: 28px 0; }
+.card blockquote {
+  margin: 14px 0; padding: 12px 18px; background: var(--bg-200); color: var(--ink-muted);
+  border-radius: var(--radius-md); font-size: 14px;
+}
+.card code {
+  background: var(--peach); color: var(--ink); border-radius: 6px; padding: 1px 7px; font-size: .9em;
+  font-family: Consolas, "D2Coding", monospace;
+}
+.tbl { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.card table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.card th, .card td { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.card th { background: var(--peach); white-space: nowrap; }
+.card tbody tr:nth-child(even) td { background: var(--bg-100); }
+.card tbody tr:last-child td { border-bottom: 0; }
+.note { position: relative; z-index: 1; color: var(--ink-muted); font-size: 14px; margin: 16px 4px; }
+
+@media (max-width: 720px) {
+  .top { padding: 10px 12px; }
+  .card { padding: 20px 16px; }
+  .card h1 { font-size: 24px; line-height: 32px; }
+  .b1 { width: 200px; height: 200px; right: -70px; top: -70px; }
+  .b2 { width: 150px; height: 150px; }
+  .fruit { width: 220px; height: 220px; right: -50px; bottom: -40px; }
+}

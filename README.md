@@ -3,7 +3,12 @@
 캘린더, 할 일(TO DO), 메모를 한 화면에서 쓰는 파스텔톤 메모장 웹페이지입니다.
 눈 내리는 겨울 배경과 다크 모드를 지원하며, 파일 하나(`memo.html`)로 동작합니다.
 
-**👉 [메모장 바로 열기](https://bangsujin07.github.io/my-memo-app/)** · [📄 기획서 보기](https://bangsujin07.github.io/my-memo-app/PRD.html)
+**👉 바로 열기** (같은 기능, 디자인 두 가지)
+
+| 디자인 | 메모장 | 기획서 |
+|---|---|---|
+| ❄️ 겨울 파스텔 | [메모장 열기](https://bangsujin07.github.io/my-memo-app/) | [📄 기획서 보기](https://bangsujin07.github.io/my-memo-app/PRD.html) |
+| 🍊 자몽 | [메모장 열기](https://bangsujin07.github.io/my-memo-app/memo-jamong.html) | [📄 기획서 보기](https://bangsujin07.github.io/my-memo-app/PRD-jamong.html) |
 
 > 국민대학교 AX-Startup 부트캠프 2기 실습으로 만들었습니다.
 
@@ -39,8 +44,13 @@ powershell -ExecutionPolicy Bypass -File .\start-memo.ps1
 
 | 파일 | 설명 |
 |---|---|
-| `memo.html` | 메모장 본체 (HTML, CSS, JavaScript가 모두 들어 있음) |
+| `memo.html` | 메모장 본체, 겨울 파스텔 디자인 (HTML, CSS, JavaScript가 모두 들어 있음) |
+| `memo-jamong.html` | 같은 메모장의 자몽 디자인 버전 (기능과 내용은 `memo.html`과 같음) |
 | `PRD.md` | 기획 문서 (무엇을, 누구를 위해, 어떤 순서로 만들지) |
+| `PRD.html` · `site.css` | 기획서를 겨울 파스텔 디자인으로 보여 주는 페이지 |
+| `PRD-jamong.html` · `site-jamong.css` · `grapefruit-slice.svg` | 기획서를 자몽 디자인으로 보여 주는 페이지와 자몽 그림 |
+| `code.html` | 실행 스크립트를 설명과 함께 보여 주는 페이지 |
+| `index.html` · `site.js` | 첫 주소에서 `memo.html`로 이동 / 기획서·스크립트 페이지의 다크 모드 |
 | `serve.ps1` | 이 폴더를 `localhost`로 보여 주는 간단한 로컬 서버 (Windows 전용) |
 | `start-memo.ps1` | 서버를 켜고 브라우저를 여는 시작 스크립트 (Windows 전용) |
 
