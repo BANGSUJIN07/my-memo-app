@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    { "source": "/jamong/", "destination": "/jamong", "permanent": false },
+    { "source": "/", "has": [{ "type": "host", "value": "my-memo-app-jamong.vercel.app" }], "destination": "/jamong", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/jamong", "destination": "/memo-jamong.html" }
+  ]
+}
