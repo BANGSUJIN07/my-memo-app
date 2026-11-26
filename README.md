@@ -3,6 +3,8 @@
 캘린더, 할 일(TO DO), 메모를 한 화면에서 쓰는 파스텔톤 메모장 웹페이지입니다.
 눈 내리는 겨울 배경과 다크 모드를 지원하며, 파일 하나(`memo.html`)로 동작합니다.
 
+**👉 [메모장 바로 열기](https://bangsujin07.github.io/my-memo-app/)** · [📄 기획서 보기](https://bangsujin07.github.io/my-memo-app/PRD.html)
+
 > 국민대학교 AX-Startup 부트캠프 2기 실습으로 만들었습니다.
 
 ## 주요 기능
