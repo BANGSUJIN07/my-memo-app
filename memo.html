@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>나만의 메모장</title>
+<style>
+  /* ===== 색 바꾸는 곳: 아래 값만 바꾸면 전체 분위기가 바뀝니다 ===== */
+  :root {
+    --bg: #e8f2fa;          /* 칸 안쪽 배경 (연한 얼음색) */
+    --panel: #ffffff;       /* 카드 배경 */
+    --main: #9fcbea;        /* 메인 색 (하늘) */
+    --main-dark: #78b0d9;   /* 버튼 눌렀을 때 색 */
+    --sub: #dcebf7;         /* 보조 색 (연하늘) */
+    --mint: #d4f1e4;        /* 보조 색 (민트) */
+    --lilac: #e6e3f7;       /* 보조 색 (연보라) */
+    --text: #3f4a5c;        /* 글자색 */
+    --muted: #8794a8;       /* 흐린 글자색 */
+    --line: #dbe8f2;        /* 테두리 */
+    --sky-top: #c6dcf0;     /* 겨울 하늘 위쪽 색 */
+    --sky-bottom: #eef5fb;  /* 겨울 하늘 아래쪽 색 */
+    --sel: #eaf4fc;         /* 선택된 메모 배경 */
+    --ghost-hover: #b7dbf0; /* 보조 버튼에 마우스 올렸을 때 */
+    --late: #ffd6d6;        /* 마감 지남 표시 */
+    --header-bg: rgba(255,255,255,.9);
+  }
+  /* 다크 모드: 헤더의 🌙 버튼을 누르면 아래 색으로 바뀝니다 */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #2a3446; --panel: #1f2937; --main: #4f7fa8; --main-dark: #6a9cc8;
+    --sub: #33465c; --mint: #2f5a4a; --lilac: #3a3a5c; --text: #e4eaf2;
+    --muted: #9aa7ba; --line: #364458; --sky-top: #0f1b2d; --sky-bottom: #1d2c44;
+    --sel: #2e4560; --ghost-hover: #41597a; --late: #6b3a3a;
+    --header-bg: rgba(31,41,55,.9);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%) fixed;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 16px 24px; background: var(--panel); border-bottom: 2px solid var(--line);
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  nav { display: flex; gap: 8px; }
+  nav button {
+    border: none; padding: 8px 16px; border-radius: 999px; font-size: 14px;
+    background: var(--lilac); color: var(--text); cursor: pointer;
+  }
+  nav button.active { background: var(--main); font-weight: bold; }
+  nav button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .app { display: flex; gap: 16px; padding: 16px 24px; height: calc(100vh - 70px); }
+  .list-panel, .editor-panel {
+    background: var(--panel); border-radius: 16px; border: 2px solid var(--line);
+    padding: 16px; display: flex; flex-direction: column;
+  }
+  .list-panel { width: 300px; flex-shrink: 0; }
+  .editor-panel { flex: 1; min-width: 0; }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+  input[type=text] {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 9px 12px; font-size: 14px; color: var(--text); outline: none; background: var(--panel);
+    font-family: inherit;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--main); }
+  .btn {
+    border: none; background: var(--main); color: var(--text); border-radius: 10px;
+    padding: 9px 14px; font-size: 14px; cursor: pointer; white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--main-dark); }
+  .btn.ghost { background: var(--sub); color: var(--text); }
+  .btn.ghost:hover { background: var(--ghost-hover); }
+
+  #memoList { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .memo-item {
+    padding: 10px 12px; border-radius: 12px; background: var(--bg);
+    border: 2px solid transparent; cursor: pointer;
+  }
+  .memo-item:hover { border-color: var(--sub); }
+  .memo-item.selected { border-color: var(--main); background: var(--sel); }
+  .memo-item .t { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .memo-item .p { font-size: 12px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .memo-item .d { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .empty { color: var(--muted); text-align: center; margin: auto; font-size: 14px; line-height: 1.7; }
+
+  .editor-head { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  #titleInput { font-size: 18px; font-weight: bold; }
+  #star { background: none; border: none; font-size: 24px; cursor: pointer; color: #d9d2e0; }
+  #star.on { color: #f5b942; }
+  textarea {
+    flex: 1; width: 100%; resize: none; border: 2px solid var(--line); border-radius: 12px;
+    padding: 14px; font-size: 15px; line-height: 1.7; color: var(--text); outline: none; background: var(--panel);
+    font-family: inherit;
+  }
+  .editor-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+  [hidden] { display: none !important; }
+
+  /* 눈 내리는 배경: 화면 맨 뒤에 깔리고, 클릭은 그대로 통과해요 */
+  #snow { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  header, .app, .todo-view { position: relative; z-index: 1; }
+  header { background: var(--header-bg); }
+
+  /* ===== 할 일 화면 ===== */
+  .todo-view { max-width: 720px; margin: 0 auto; padding: 16px 24px; }
+  .todo-card { background: var(--panel); border-radius: 16px; border: 2px solid var(--line); padding: 16px; }
+  .todo-add { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .todo-add input[type=text] { flex: 1; min-width: 180px; }
+  input[type=date] {
+    border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px;
+    font-size: 14px; color: var(--text); font-family: inherit; outline: none; background: var(--panel);
+  }
+  input[type=date]:focus { border-color: var(--main); }
+  .todo-filters { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .todo-filters button {
+    border: none; background: var(--lilac); color: var(--text); border-radius: 999px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .todo-filters button.active { background: var(--mint); font-weight: bold; }
+  #todoCount { margin-left: auto; font-size: 13px; color: var(--muted); }
+  #todoList { display: flex; flex-direction: column; gap: 8px; }
+  .todo-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--bg); border-radius: 12px;
+  }
+  .todo-item input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--main-dark); cursor: pointer; flex-shrink: 0; }
+  .todo-item .txt { flex: 1; font-size: 15px; word-break: break-word; }
+  .todo-item.done .txt { text-decoration: line-through; color: var(--muted); }
+  .badge { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--sub); white-space: nowrap; }
+  .badge.today { background: var(--mint); }
+  .badge.late { background: var(--late); }
+  .todo-item.done .badge { opacity: .5; }
+  .todo-del { border: none; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+  .todo-del:hover { color: var(--main-dark); }
+
+  /* ===== 오늘 화면 ===== */
+  .today-view { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 16px 24px; }
+  .today-view h2 { margin: 0 0 14px; font-size: 20px; }
+  .today-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .today-grid h3 { margin: 0 0 12px; font-size: 16px; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .tm-item { padding: 10px 12px; border-radius: 12px; background: var(--bg); cursor: pointer; border: 2px solid transparent; }
+  .tm-item:hover { border-color: var(--sub); }
+  .tm-item .t { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tm-item .p { font-size: 12px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .cal-ev.todo { background: var(--mint); }
+  @media (max-width: 720px) {
+    .today-view { padding: 12px; }
+    .today-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ===== 캘린더 화면 ===== */
+  input[type=time] {
+    border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px;
+    font-size: 14px; color: var(--text); font-family: inherit; outline: none; background: var(--panel);
+  }
+  input[type=time]:focus { border-color: var(--main); }
+  .cal-view { display: flex; gap: 16px; max-width: 1000px; margin: 0 auto; padding: 16px 24px; align-items: flex-start; }
+  .cal-card { background: var(--panel); border-radius: 16px; border: 2px solid var(--line); padding: 16px; }
+  .cal-card:first-child { flex: 1; min-width: 0; }
+  .cal-side { width: 300px; flex-shrink: 0; }
+  .cal-side h3 { margin: 0 0 12px; font-size: 16px; }
+  .cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .cal-head strong { flex: 1; text-align: center; font-size: 17px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
+  .cal-cell {
+    min-height: 72px; border: 2px solid transparent; background: var(--bg); border-radius: 10px;
+    padding: 4px 6px; text-align: left; cursor: pointer; font-family: inherit; color: var(--text);
+    display: flex; flex-direction: column; gap: 2px; overflow: hidden;
+  }
+  .cal-cell:hover { border-color: var(--sub); }
+  .cal-cell.sel { border-color: var(--main-dark); }
+  .cal-cell.blank { background: transparent; border: none; cursor: default; }
+  .cal-cell .num { font-size: 13px; align-self: flex-start; }
+  .cal-cell.today .num { background: var(--main); border-radius: 999px; padding: 0 7px; font-weight: bold; }
+  .cal-cell.sun .num { color: #d98a9a; }
+  .cal-cell.sat .num { color: #6a9fd0; }
+  .cal-ev { font-size: 11px; background: var(--sub); border-radius: 6px; padding: 1px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-more { font-size: 11px; color: var(--muted); }
+  .cal-dot { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--main-dark); }
+  @media (max-width: 720px) {
+    .cal-view { flex-direction: column; padding: 12px; }
+    .cal-side { width: 100%; }
+    .cal-cell { min-height: 48px; }
+    .cal-ev, .cal-more { display: none; }
+    .cal-dot.has { display: block; }
+  }
+
+  @media (max-width: 720px) {
+    .app { flex-direction: column; height: auto; }
+    .list-panel { width: 100%; max-height: 260px; }
+    .editor-panel { min-height: 420px; }
+  }
+
+  /* ===== 1-5 추가 기능 ===== */
+  select {
+    border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 14px;
+    color: var(--text); background: var(--panel); font-family: inherit; outline: none;
+  }
+  select:focus { border-color: var(--main); }
+  .editor-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+  .tagbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tagbar button {
+    border: none; background: var(--lilac); color: var(--text); border-radius: 999px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .tagbar button.active { background: var(--mint); font-weight: bold; }
+  .list-foot { margin-top: 10px; }
+  .list-foot .btn { width: 100%; }
+  .inline-edit { flex: 1; min-width: 0; padding: 4px 8px !important; font-size: 15px !important; }
+  .edit-btn { border: none; background: none; color: var(--muted); font-size: 15px; cursor: pointer; }
+  .edit-btn:hover { color: var(--main-dark); }
+  .badge.none { background: transparent; color: var(--muted); border: 1px dashed var(--line); cursor: pointer; }
+  .badge.clickable { cursor: pointer; }
+  .cal-ev.memo { background: var(--lilac); }
+  .todo-filters input[type=text] { width: 150px; padding: 5px 10px; font-size: 13px; }
+  .tm-item.in-side { margin-bottom: 0; }
+  nav button { white-space: nowrap; }
+
+  /* ===== 시작 화면 ===== */
+  .intro { display: none; position: relative; z-index: 1; min-height: 100vh; align-items: center; justify-content: center; padding: 16px; }
+  body.intro-on .intro { display: flex; }
+  body.intro-on header, body.intro-on main { display: none; }   /* 시작하기 전에는 메모장을 숨겨요 */
+  .intro-card {
+    background: var(--header-bg); border: 2px solid var(--line); border-radius: 24px;
+    padding: 40px 48px; text-align: center; max-width: 360px; width: 100%;
+  }
+  .intro-theme { position: absolute; top: 16px; right: 16px; }
+  .intro-icon { font-size: 48px; }
+  .intro-card h1 { margin: 8px 0 6px; font-size: 26px; }
+  .intro-card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .intro-card .intro-date { margin-top: 4px; }
+  .intro-card .btn { margin-top: 24px; width: 100%; font-size: 16px; padding: 12px 0; font-weight: bold; }
+  @media (max-width: 720px) {
+    header { padding: 12px; gap: 10px; }
+    nav { order: 3; width: 100%; }
+    nav button { flex: 1; padding: 8px 6px; }
+    .todo-view { padding: 12px; }
+    .todo-filters input[type=text] { width: 100%; order: 5; }
+    .todo-item { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body class="intro-on">
+<canvas id="snow"></canvas>
+
+<!-- 시작 화면: "시작하기"를 눌러야 메모장이 나타나요 -->
+<section class="intro" id="intro">
+  <button class="btn ghost theme-btn intro-theme" title="다크 모드 켜기/끄기">🌙</button>
+  <div class="intro-card">
+    <div class="intro-icon">❄️</div>
+    <h1>나만의 메모장</h1>
+    <p>일정, 할 일, 메모를 한곳에서</p>
+    <p class="intro-date" id="introDate"></p>
+    <button class="btn" id="startBtn">시작하기</button>
+  </div>
+</section>
+
+<header>
+  <h1>❄️ 나만의 메모장</h1>
+  <nav>
+    <button class="active" data-tab="today">오늘</button>
+    <button data-tab="memo">메모</button>
+    <button data-tab="todo">할 일</button>
+    <button data-tab="calendar">캘린더</button>
+  </nav>
+  <button class="btn ghost theme-btn" style="margin-left:auto" title="다크 모드 켜기/끄기">🌙</button>
+</header>
+
+<!-- 오늘 화면 (첫 화면) -->
+<main class="today-view" id="todayView">
+  <h2 id="todayTitle"></h2>
+  <div class="today-grid">
+    <section class="cal-card"><h3>📅 오늘 일정</h3><div class="stack" id="tdEvents"></div></section>
+    <section class="cal-card"><h3>✅ 오늘 할 일</h3><div class="stack" id="tdTodos"></div></section>
+    <section class="cal-card"><h3>📝 최근 메모</h3><div class="stack" id="tdMemos"></div></section>
+  </div>
+</main>
+
+<main class="app" id="memoView" hidden>
+  <!-- 왼쪽: 메모 목록 -->
+  <section class="list-panel">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="메모 검색">
+      <button class="btn" id="newBtn">+ 새 메모</button>
+    </div>
+    <div class="tagbar" id="tagBar"></div>
+    <div id="memoList"></div>
+    <div class="list-foot"><button class="btn ghost" id="exportBtn" title="모든 메모를 텍스트 파일로 저장">⬇ 메모 내보내기</button></div>
+  </section>
+
+  <!-- 오른쪽: 메모 쓰는 곳 -->
+  <section class="editor-panel" id="editorPanel">
+    <div class="editor-head">
+      <input type="text" id="titleInput" placeholder="제목">
+      <button id="star" title="중요 표시">★</button>
+    </div>
+    <div class="editor-meta">
+      <label for="memoDate">📅 날짜</label>
+      <input type="date" id="memoDate" title="날짜를 정하면 그날 캘린더에서 열어볼 수 있어요">
+      <label for="memoTag">🏷 태그</label>
+      <select id="memoTag"></select>
+    </div>
+    <textarea id="contentInput" placeholder="여기에 내용을 적어보세요. 쓰는 대로 자동 저장돼요."></textarea>
+    <div class="editor-foot">
+      <span id="status">자동 저장됨</span>
+      <button class="btn ghost" id="delBtn">삭제</button>
+    </div>
+  </section>
+</main>
+
+<!-- 할 일 화면 -->
+<main class="todo-view" id="todoView" hidden>
+  <section class="todo-card">
+    <div class="todo-add">
+      <input type="text" id="todoInput" placeholder="할 일을 적고 Enter 또는 추가 버튼" maxlength="200">
+      <input type="date" id="todoDue" title="마감 날짜 (선택)">
+      <button class="btn" id="todoAddBtn">추가</button>
+    </div>
+    <div class="todo-filters">
+      <button class="active" data-filter="all">전체</button>
+      <button data-filter="active">진행 중</button>
+      <button data-filter="done">완료</button>
+      <input type="text" id="todoSearch" placeholder="할 일 검색">
+      <span id="todoCount"></span>
+    </div>
+    <div id="todoList"></div>
+  </section>
+</main>
+
+<!-- 캘린더 화면 -->
+<main class="cal-view" id="calView" hidden>
+  <section class="cal-card">
+    <div class="cal-head">
+      <button class="btn ghost" id="calPrev" title="이전 달">◀</button>
+      <strong id="calTitle"></strong>
+      <button class="btn ghost" id="calNext" title="다음 달">▶</button>
+      <button class="btn" id="calToday">오늘</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+  <section class="cal-card cal-side">
+    <h3 id="dayTitle"></h3>
+    <div class="todo-add">
+      <input type="text" id="evInput" placeholder="일정 제목" maxlength="100">
+      <input type="time" id="evTime" title="시간 (선택)">
+      <button class="btn" id="evAddBtn">추가</button>
+    </div>
+    <div id="evList"></div>
+  </section>
+</main>
+
+<script>
+  // ===== 1. 저장소: 브라우저 안에 메모를 보관합니다 =====
+  const KEY = "memo-app-v1";            // 저장할 때 쓰는 이름표
+  let memos = [];                        // 메모들이 담긴 목록
+  let currentId = null;                  // 지금 보고 있는 메모의 번호
+  const TAGS = ["공부", "취업", "개인"];  // 태그 목록 (여기에 글자를 추가하면 태그가 늘어나요)
+  let tagFilter = "";                    // 목록에서 보고 있는 태그 ("" = 전체)
+
+  function load() {
+    try { memos = JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch (e) { memos = []; }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(memos)); }
+    catch (e) { document.getElementById("status").textContent = "저장 실패 (브라우저 설정 확인)"; }
+  }
+
+  // ===== 2. 화면에 보여주기 =====
+  const $list = document.getElementById("memoList");
+  const $title = document.getElementById("titleInput");
+  const $content = document.getElementById("contentInput");
+  const $star = document.getElementById("star");
+  const $status = document.getElementById("status");
+  const $search = document.getElementById("search");
+  const $mDate = document.getElementById("memoDate");
+  const $mTag = document.getElementById("memoTag");
+  // 태그 선택 상자 채우기: "태그 없음" + TAGS
+  [["", "태그 없음"]].concat(TAGS.map(t => [t, t])).forEach(([v, label]) => {
+    const o = document.createElement("option"); o.value = v; o.textContent = label; $mTag.appendChild(o);
+  });
+
+  function fmt(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  }
+
+  function renderList() {
+    const q = $search.value.trim().toLowerCase();
+    // 중요 표시한 메모를 위로, 그다음 최근 수정 순
+    const shown = memos
+      .filter(m => (m.title + m.content).toLowerCase().includes(q) && (!tagFilter || m.tag === tagFilter))
+      .sort((a, b) => (b.star - a.star) || (b.updated - a.updated));
+    $list.innerHTML = "";
+    if (shown.length === 0) {
+      $list.innerHTML = `<div class="empty">${q ? "검색 결과가 없어요" : "아직 메모가 없어요.<br>‘+ 새 메모’를 눌러보세요 ☃️"}</div>`;
+      return;
+    }
+    shown.forEach(m => {
+      const el = document.createElement("div");
+      el.className = "memo-item" + (m.id === currentId ? " selected" : "");
+      const t = document.createElement("div"); t.className = "t";
+      t.textContent = (m.star ? "★ " : "") + (m.title || "제목 없음");
+      const p = document.createElement("div"); p.className = "p";
+      p.textContent = m.content || "내용 없음";
+      const d = document.createElement("div"); d.className = "d";
+      d.textContent = fmt(m.updated) + (m.tag ? " · #" + m.tag : "") + (m.date ? " · 📅 " + m.date : "");
+      el.append(t, p, d);
+      el.onclick = () => select(m.id);
+      $list.appendChild(el);
+    });
+  }
+
+  function renderEditor() {
+    const m = memos.find(x => x.id === currentId);
+    const has = !!m;
+    $title.disabled = $content.disabled = !has;
+    $title.value = has ? m.title : "";
+    $content.value = has ? m.content : "";
+    $star.classList.toggle("on", has && !!m.star);
+    $mDate.disabled = $mTag.disabled = !has;
+    $mDate.value = has ? (m.date || "") : "";
+    $mTag.value = has ? (m.tag || "") : "";
+    $status.textContent = has ? "자동 저장됨" : "메모를 고르거나 새로 만들어보세요";
+  }
+
+  function select(id) { currentId = id; renderList(); renderEditor(); }
+
+  // ===== 3. 새 메모 / 수정 / 삭제 =====
+  document.getElementById("newBtn").onclick = () => {
+    const m = { id: Date.now(), title: "", content: "", star: false, date: "", tag: "", updated: Date.now() };
+    memos.push(m); save();
+    $search.value = "";
+    select(m.id);
+    $title.focus();
+  };
+
+  function onEdit() {
+    const m = memos.find(x => x.id === currentId);
+    if (!m) return;
+    m.title = $title.value;
+    m.content = $content.value;
+    m.date = $mDate.value;
+    m.tag = $mTag.value;
+    m.updated = Date.now();
+    save();
+    $status.textContent = "자동 저장됨";
+    renderList();
+  }
+  $title.addEventListener("input", onEdit);
+  $content.addEventListener("input", onEdit);
+  $mDate.addEventListener("change", onEdit);
+  $mTag.addEventListener("change", onEdit);
+
+  $star.onclick = () => {
+    const m = memos.find(x => x.id === currentId);
+    if (!m) return;
+    m.star = !m.star; save();
+    $star.classList.toggle("on", m.star);
+    renderList();
+  };
+
+  document.getElementById("delBtn").onclick = () => {
+    const m = memos.find(x => x.id === currentId);
+    if (!m) return;
+    if (!confirm("이 메모를 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return;
+    memos = memos.filter(x => x.id !== currentId);
+    save();
+    currentId = memos.length ? memos[0].id : null;
+    renderList(); renderEditor();
+  };
+
+  $search.addEventListener("input", renderList);
+
+  // 목록 위 태그 필터 버튼 ("전체" + 태그들)
+  function renderTagBar() {
+    const $bar = document.getElementById("tagBar");
+    $bar.innerHTML = "";
+    [["", "전체"]].concat(TAGS.map(t => [t, "#" + t])).forEach(([v, label]) => {
+      const b = document.createElement("button");
+      b.textContent = label;
+      b.className = tagFilter === v ? "active" : "";
+      b.onclick = () => { tagFilter = v; renderTagBar(); renderList(); };
+      $bar.appendChild(b);
+    });
+  }
+
+  // 메모를 다른 탭에서 열 때: 검색/태그 필터를 풀어서 목록에 보이게 해요
+  function openMemo(id) {
+    showTab("memo");
+    $search.value = ""; tagFilter = ""; renderTagBar();
+    select(id);
+  }
+
+  // 내보내기: 모든 메모를 텍스트 파일(.txt)로 내려받기 (서버 없이 브라우저에서 만들어요)
+  document.getElementById("exportBtn").onclick = () => {
+    if (!memos.length) { alert("내보낼 메모가 없어요."); return; }
+    const text = memos.slice().sort((a, b) => b.updated - a.updated).map(m =>
+      ["# " + (m.title || "제목 없음"),
+       "태그: " + (m.tag || "없음") + " / 날짜: " + (m.date || "없음") + " / 수정: " + fmt(m.updated),
+       "", m.content, "", "----------"].join("\n")
+    ).join("\n\n");
+    const blob = new Blob(["﻿" + text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "memos-" + todayStr() + ".txt";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  // 다크 모드: 선택을 브라우저에 기억해요. 처음엔 컴퓨터의 다크 모드 설정을 따라가요
+  const $themeBtns = document.querySelectorAll(".theme-btn");   // 시작 화면과 메모장의 버튼 둘 다
+  let theme = null;
+  try { theme = localStorage.getItem("theme-v1"); } catch (e) {}
+  if (theme !== "dark" && theme !== "light") theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  function applyTheme() {
+    document.documentElement.dataset.theme = theme;
+    $themeBtns.forEach(b => { b.textContent = theme === "dark" ? "☀️" : "🌙"; });
+  }
+  $themeBtns.forEach(b => {
+    b.onclick = () => {
+      theme = theme === "dark" ? "light" : "dark";
+      applyTheme();
+      try { localStorage.setItem("theme-v1", theme); } catch (e) {}
+    };
+  });
+  applyTheme();
+
+  // ===== 제자리 수정: 글자/날짜/시간을 눌러서 바로 고치는 공통 도구 =====
+  // 돌려주는 함수를 실행하면 el이 입력칸으로 바뀌어요.
+  // 글자: Enter=저장, Esc=취소 / 날짜·시간: 고르면 저장. onSave에는 새 값(취소면 null)이 들어와요.
+  function editField(el, type, current, onSave) {
+    return () => {
+      const inp = document.createElement("input");
+      inp.type = type; inp.value = current || "";
+      if (type === "text") { inp.maxLength = 200; inp.className = "inline-edit"; }
+      let finished = false;
+      const done = ok => { if (finished) return; finished = true; onSave(ok ? inp.value.trim() : null); };
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") done(true); else if (e.key === "Escape") done(false); });
+      inp.addEventListener("blur", () => done(true));
+      if (type !== "text") inp.addEventListener("change", () => done(true));
+      el.replaceWith(inp); inp.focus();
+      if (type === "text") inp.select();
+    };
+  }
+
+  // ===== 할 일(TO DO) =====
+  const TKEY = "todo-app-v1";            // 할 일 저장 이름표 (메모와 따로 보관)
+  let todos = [];                         // 할 일 목록
+  let filter = "all";                     // 보기 방식: all / active / done
+
+  function loadTodos() {
+    try { todos = JSON.parse(localStorage.getItem(TKEY)) || []; }
+    catch (e) { todos = []; }
+  }
+  function saveTodos() {
+    try { localStorage.setItem(TKEY, JSON.stringify(todos)); } catch (e) {}
+  }
+  // 오늘 날짜를 "2026-11-26" 모양 글자로 만들기
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  const $todoList = document.getElementById("todoList");
+  const $todoInput = document.getElementById("todoInput");
+  const $todoDue = document.getElementById("todoDue");
+  const $todoSearch = document.getElementById("todoSearch");
+  $todoSearch.addEventListener("input", () => renderTodos());
+
+  function renderTodos() {
+    const t = todayStr();
+    const left = todos.filter(x => !x.done).length;
+    document.getElementById("todoCount").textContent = `남은 일 ${left}개 / 전체 ${todos.length}개`;
+
+    // 안 끝난 일 먼저 → 마감 빠른 순 → 마감 없는 일은 맨 뒤
+    const shown = todos
+      .filter(x => filter === "all" || (filter === "done" ? x.done : !x.done))
+      .filter(x => x.text.toLowerCase().includes($todoSearch.value.trim().toLowerCase()))
+      .sort((a, b) => (a.done - b.done) || ((a.due || "9999") > (b.due || "9999") ? 1 : (a.due || "9999") < (b.due || "9999") ? -1 : a.id - b.id));
+
+    $todoList.innerHTML = "";
+    if (shown.length === 0) {
+      $todoList.innerHTML = `<div class="empty" style="padding:24px 0">${todos.length ? "해당하는 할 일이 없어요" : "아직 할 일이 없어요.<br>위 칸에 적어서 추가해 보세요 ☃️"}</div>`;
+      return;
+    }
+    shown.forEach(x => {
+      const row = document.createElement("div");
+      row.className = "todo-item" + (x.done ? " done" : "");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = x.done;
+      cb.onchange = () => { x.done = cb.checked; saveTodos(); renderTodos(); };
+
+      const txt = document.createElement("span");
+      txt.className = "txt"; txt.textContent = x.text;
+      const startText = editField(txt, "text", x.text, v => { if (v) x.text = v; saveTodos(); renderTodos(); });
+      txt.ondblclick = startText; txt.title = "더블클릭해서 수정";
+
+      row.append(cb, txt);
+
+      // 마감일 뱃지: 눌러서 마감일을 바꾸거나 새로 정할 수 있어요
+      const b = document.createElement("span");
+      b.className = "badge clickable"; b.title = "눌러서 마감일 수정";
+      if (x.due) {
+        const [y, m, d] = x.due.split("-");
+        b.textContent = `${Number(m)}/${Number(d)}`;
+        if (!x.done && x.due < t) { b.className += " late"; b.textContent += " 지남"; }
+        else if (x.due === t) { b.className += " today"; b.textContent = "오늘"; }
+      } else { b.className = "badge none"; b.textContent = "마감 없음"; }
+      b.onclick = editField(b, "date", x.due, v => { if (v !== null) x.due = v; saveTodos(); renderTodos(); });
+      row.appendChild(b);
+
+      const ed = document.createElement("button");
+      ed.className = "edit-btn"; ed.textContent = "✎"; ed.title = "내용 수정"; ed.onclick = startText;
+      row.appendChild(ed);
+
+      const del = document.createElement("button");
+      del.className = "todo-del"; del.textContent = "✕"; del.title = "삭제";
+      del.onclick = () => {
+        todos = todos.filter(y => y.id !== x.id);
+        saveTodos(); renderTodos();
+      };
+      row.appendChild(del);
+      $todoList.appendChild(row);
+    });
+  }
+
+  function addTodo() {
+    const text = $todoInput.value.trim();
+    if (!text) { $todoInput.focus(); return; }
+    todos.push({ id: Date.now(), text: text, due: $todoDue.value || "", done: false });
+    saveTodos();
+    $todoInput.value = ""; $todoDue.value = "";
+    $todoInput.focus();
+    renderTodos();
+  }
+  document.getElementById("todoAddBtn").onclick = addTodo;
+  $todoInput.addEventListener("keydown", e => { if (e.key === "Enter") addTodo(); });
+
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.onclick = () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll("[data-filter]").forEach(b => b.classList.toggle("active", b === btn));
+      renderTodos();
+    };
+  });
+
+  // ===== 캘린더 =====
+  const CKEY = "cal-app-v1";              // 일정 저장 이름표 (메모, 할 일과 따로 보관)
+  let events = [];                         // 일정 목록: { id, date, time, title }
+  const nowDate = new Date();
+  let viewY = nowDate.getFullYear();       // 지금 보고 있는 연도
+  let viewM = nowDate.getMonth();          // 지금 보고 있는 달 (0 = 1월, 11 = 12월)
+  let selDate = todayStr();                // 선택한 날짜 ("2026-11-26" 모양)
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+
+  function loadEvents() {
+    try { events = JSON.parse(localStorage.getItem(CKEY)) || []; }
+    catch (e) { events = []; }
+  }
+  function saveEvents() {
+    try { localStorage.setItem(CKEY, JSON.stringify(events)); } catch (e) {}
+  }
+  function ymd(y, m, d) {
+    return y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+  // 그날의 일정을 시간 순으로 (시간이 없는 일정은 맨 위)
+  function eventsOf(date) {
+    return events.filter(e => e.date === date).sort((a, b) => (a.time || "").localeCompare(b.time || "") || a.id - b.id);
+  }
+
+  // 그날이 마감인 할 일 (all=true면 완료한 것도 포함)
+  function todosOf(date, all) {
+    return todos.filter(x => x.due === date && (all || !x.done));
+  }
+
+  // 그날로 날짜를 붙인 메모
+  function memosOf(date) {
+    return memos.filter(m => m.date === date).sort((a, b) => b.updated - a.updated);
+  }
+
+  const $calGrid = document.getElementById("calGrid");
+  const $evList = document.getElementById("evList");
+  const $evInput = document.getElementById("evInput");
+  const $evTime = document.getElementById("evTime");
+
+  function renderCalendar() {
+    document.getElementById("calTitle").textContent = `${viewY}년 ${viewM + 1}월`;
+    $calGrid.innerHTML = "";
+    DOW.forEach(n => {
+      const h = document.createElement("div");
+      h.className = "cal-dow"; h.textContent = n;
+      $calGrid.appendChild(h);
+    });
+
+    const firstDow = new Date(viewY, viewM, 1).getDay();       // 1일이 무슨 요일인지
+    const lastDay = new Date(viewY, viewM + 1, 0).getDate();   // 그 달의 마지막 날짜
+    const t = todayStr();
+
+    for (let i = 0; i < firstDow; i++) {                       // 앞쪽 빈칸
+      const b = document.createElement("div");
+      b.className = "cal-cell blank";
+      $calGrid.appendChild(b);
+    }
+    for (let d = 1; d <= lastDay; d++) {
+      const date = ymd(viewY, viewM, d);
+      const dow = new Date(viewY, viewM, d).getDay();
+      const cell = document.createElement("button");
+      cell.className = "cal-cell" + (date === t ? " today" : "") + (date === selDate ? " sel" : "")
+        + (dow === 0 ? " sun" : dow === 6 ? " sat" : "");
+      const num = document.createElement("span");
+      num.className = "num"; num.textContent = d;
+      cell.appendChild(num);
+
+      // 일정과 "마감인 할 일(아직 안 끝난 것)"을 한 줄로 합쳐서 보여줘요
+      const items = eventsOf(date).map(e => ({ t: e.title, todo: false }))
+        .concat(todosOf(date, false).map(x => ({ t: "☐ " + x.text, todo: true })))
+        .concat(memosOf(date).map(m => ({ t: "📝 " + (m.title || "제목 없음"), todo: false, memo: true })));
+      items.slice(0, 2).forEach(it => {
+        const chip = document.createElement("span");
+        chip.className = "cal-ev" + (it.todo ? " todo" : "") + (it.memo ? " memo" : ""); chip.textContent = it.t;
+        cell.appendChild(chip);
+      });
+      if (items.length > 2) {
+        const more = document.createElement("span");
+        more.className = "cal-more"; more.textContent = `+${items.length - 2}개`;
+        cell.appendChild(more);
+      }
+      const dot = document.createElement("span");              // 좁은 화면에서는 점으로만 표시
+      dot.className = "cal-dot" + (items.length ? " has" : "");
+      cell.appendChild(dot);
+
+      cell.onclick = () => { selDate = date; renderCalendar(); };
+      $calGrid.appendChild(cell);
+    }
+    renderDay();
+  }
+
+  // 오른쪽: 선택한 날짜의 일정 목록
+  function renderDay() {
+    const [y, m, d] = selDate.split("-").map(Number);
+    document.getElementById("dayTitle").textContent = `${m}월 ${d}일 (${DOW[new Date(y, m - 1, d).getDay()]})`;
+    const list = eventsOf(selDate);
+    const dues = todosOf(selDate, true);
+    const mms = memosOf(selDate);
+    $evList.innerHTML = "";
+    if (list.length === 0 && dues.length === 0 && mms.length === 0) {
+      $evList.innerHTML = `<div class="empty" style="padding:18px 0">이 날은 일정이 없어요 ☃️</div>`;
+      return;
+    }
+    $evList.style.cssText = "display:flex;flex-direction:column;gap:8px";
+    list.forEach(ev => {
+      const row = document.createElement("div");
+      row.className = "todo-item";
+      const txt = document.createElement("span");
+      txt.className = "txt"; txt.textContent = ev.title;
+      const startTitle = editField(txt, "text", ev.title, v => { if (v) ev.title = v; saveEvents(); renderCalendar(); });
+      txt.ondblclick = startTitle; txt.title = "더블클릭해서 수정";
+      row.appendChild(txt);
+      const b = document.createElement("span");
+      b.title = "눌러서 시간 수정";
+      if (ev.time) { b.className = "badge clickable"; b.textContent = ev.time; }
+      else { b.className = "badge none"; b.textContent = "시간 없음"; }
+      b.onclick = editField(b, "time", ev.time, v => { if (v !== null) ev.time = v; saveEvents(); renderCalendar(); });
+      row.appendChild(b);
+      const ed = document.createElement("button");
+      ed.className = "edit-btn"; ed.textContent = "✎"; ed.title = "제목 수정"; ed.onclick = startTitle;
+      row.appendChild(ed);
+      const del = document.createElement("button");
+      del.className = "todo-del"; del.textContent = "✕"; del.title = "삭제";
+      del.onclick = () => {
+        events = events.filter(x => x.id !== ev.id);
+        saveEvents(); renderCalendar();
+      };
+      row.appendChild(del);
+      $evList.appendChild(row);
+    });
+    // 그날 마감인 할 일도 여기서 바로 체크할 수 있어요
+    if (dues.length) {
+      const sub = document.createElement("div");
+      sub.className = "side-sub"; sub.textContent = "마감인 할 일";
+      $evList.appendChild(sub);
+      dues.forEach(x => {
+        const row = document.createElement("div");
+        row.className = "todo-item" + (x.done ? " done" : "");
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = x.done;
+        cb.onchange = () => { x.done = cb.checked; saveTodos(); renderCalendar(); };
+        const txt = document.createElement("span");
+        txt.className = "txt"; txt.textContent = x.text;
+        row.append(cb, txt);
+        $evList.appendChild(row);
+      });
+    }
+    // 이 날짜를 붙인 메모: 누르면 메모 탭에서 열려요
+    if (mms.length) {
+      const sub = document.createElement("div");
+      sub.className = "side-sub"; sub.textContent = "이 날의 메모";
+      $evList.appendChild(sub);
+      mms.forEach(m => {
+        const el = document.createElement("div"); el.className = "tm-item in-side";
+        const tt = document.createElement("div"); tt.className = "t"; tt.textContent = m.title || "제목 없음";
+        const pp = document.createElement("div"); pp.className = "p"; pp.textContent = m.content || "내용 없음";
+        el.append(tt, pp);
+        el.onclick = () => openMemo(m.id);
+        $evList.appendChild(el);
+      });
+    }
+  }
+
+  function addEvent() {
+    const title = $evInput.value.trim();
+    if (!title) { $evInput.focus(); return; }
+    events.push({ id: Date.now(), date: selDate, time: $evTime.value || "", title: title });
+    saveEvents();
+    $evInput.value = ""; $evTime.value = "";
+    $evInput.focus();
+    renderCalendar();
+  }
+  document.getElementById("evAddBtn").onclick = addEvent;
+  $evInput.addEventListener("keydown", e => { if (e.key === "Enter") addEvent(); });
+
+  document.getElementById("calPrev").onclick = () => {
+    viewM--; if (viewM < 0) { viewM = 11; viewY--; }
+    renderCalendar();
+  };
+  document.getElementById("calNext").onclick = () => {
+    viewM++; if (viewM > 11) { viewM = 0; viewY++; }
+    renderCalendar();
+  };
+  document.getElementById("calToday").onclick = () => {
+    const n = new Date();
+    viewY = n.getFullYear(); viewM = n.getMonth(); selDate = todayStr();
+    renderCalendar();
+  };
+
+  // ===== 오늘 화면: 세 기능을 한곳에 모아 보여줘요 =====
+  function renderToday() {
+    const n = new Date(), t = todayStr();
+    document.getElementById("todayTitle").textContent = `${n.getMonth() + 1}월 ${n.getDate()}일 (${DOW[n.getDay()]}) 오늘의 화면 ❄️`;
+    const msg = s => `<div class="empty" style="padding:16px 0">${s}</div>`;
+
+    // 오늘 일정
+    const $e = document.getElementById("tdEvents"); $e.innerHTML = "";
+    const evs = eventsOf(t);
+    if (!evs.length) $e.innerHTML = msg("오늘 일정이 없어요");
+    evs.forEach(ev => {
+      const row = document.createElement("div"); row.className = "todo-item";
+      const txt = document.createElement("span"); txt.className = "txt"; txt.textContent = ev.title;
+      row.appendChild(txt);
+      if (ev.time) { const b = document.createElement("span"); b.className = "badge"; b.textContent = ev.time; row.appendChild(b); }
+      $e.appendChild(row);
+    });
+
+    // 오늘 할 일: 오늘 마감이거나 마감이 지났는데 아직 안 끝낸 일
+    const $t = document.getElementById("tdTodos"); $t.innerHTML = "";
+    const due = todos.filter(x => !x.done && x.due && x.due <= t).sort((a, b) => a.due.localeCompare(b.due));
+    if (!due.length) $t.innerHTML = msg(`오늘 마감인 할 일이 없어요<br>(남은 일 ${todos.filter(x => !x.done).length}개)`);
+    due.forEach(x => {
+      const row = document.createElement("div"); row.className = "todo-item";
+      const cb = document.createElement("input"); cb.type = "checkbox";
+      cb.onchange = () => { x.done = true; saveTodos(); renderToday(); };
+      const txt = document.createElement("span"); txt.className = "txt"; txt.textContent = x.text;
+      row.append(cb, txt);
+      if (x.due < t) { const b = document.createElement("span"); b.className = "badge late"; b.textContent = "지남"; row.appendChild(b); }
+      $t.appendChild(row);
+    });
+
+    // 최근 메모 3개 (누르면 그 메모가 열려요)
+    const $m = document.getElementById("tdMemos"); $m.innerHTML = "";
+    const recent = memos.slice().sort((a, b) => b.updated - a.updated).slice(0, 3);
+    if (!recent.length) $m.innerHTML = msg("아직 메모가 없어요");
+    recent.forEach(m => {
+      const el = document.createElement("div"); el.className = "tm-item";
+      const tt = document.createElement("div"); tt.className = "t"; tt.textContent = m.title || "제목 없음";
+      const pp = document.createElement("div"); pp.className = "p"; pp.textContent = m.content || "내용 없음";
+      el.append(tt, pp);
+      el.onclick = () => { showTab("memo"); select(m.id); };
+      $m.appendChild(el);
+    });
+  }
+
+  // ===== 탭 바꾸기 (오늘 / 메모 / 할 일 / 캘린더) =====
+  function showTab(tab) {
+    document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    document.getElementById("todayView").hidden = tab !== "today";
+    document.getElementById("memoView").hidden = tab !== "memo";
+    document.getElementById("todoView").hidden = tab !== "todo";
+    document.getElementById("calView").hidden = tab !== "calendar";
+    if (tab === "today") renderToday();
+    if (tab === "todo") renderTodos();
+    if (tab === "calendar") renderCalendar();
+  }
+  document.querySelectorAll("[data-tab]").forEach(btn => {
+    btn.onclick = () => showTab(btn.dataset.tab);
+  });
+
+  // ===== 눈 내리는 배경 =====
+  const SNOW_COUNT = 90;   // 눈송이 개수 (늘리면 더 펑펑 내려요)
+  const SNOW_SPEED = 1;    // 떨어지는 속도 (0.5 = 느리게, 2 = 빠르게)
+  (function () {
+    const cv = document.getElementById("snow");
+    const ctx = cv.getContext("2d");
+    // 컴퓨터에서 "동작 줄이기"를 켜 둔 사람에게는 눈을 내리지 않아요
+    if (!ctx || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let w, h;
+    const flakes = [];
+    function resize() { w = cv.width = window.innerWidth; h = cv.height = window.innerHeight; }
+    // 눈송이 하나: 위치(x,y), 크기(r), 속도(v), 흔들림(s)
+    function make(anywhere) {
+      return { x: Math.random() * w, y: anywhere ? Math.random() * h : -10,
+               r: Math.random() * 3 + 1, v: Math.random() * 0.8 + 0.4, s: Math.random() * Math.PI * 2 };
+    }
+    resize();
+    for (let i = 0; i < SNOW_COUNT; i++) flakes.push(make(true));
+    window.addEventListener("resize", resize);
+    function tick() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      for (let i = 0; i < flakes.length; i++) {
+        const f = flakes[i];
+        f.s += 0.01;
+        f.y += f.v * SNOW_SPEED * (0.5 + f.r / 3);   // 큰 눈송이일수록 조금 더 빨리
+        f.x += Math.sin(f.s) * 0.4;                   // 좌우로 살랑살랑
+        if (f.y > h + 5) { flakes[i] = make(false); continue; }
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+
+  // ===== 4. 시작할 때 실행 =====
+  loadTodos();
+  loadEvents();
+  load();
+  renderTagBar();
+  currentId = memos.length ? memos[0].id : null;
+  renderList();
+  renderEditor();
+  renderToday();
+
+  // 시작 화면: 오늘 날짜를 보여주고, 버튼을 누르면 메모장이 나타나요
+  (function () {
+    const n = new Date();
+    document.getElementById("introDate").textContent = `${n.getFullYear()}년 ${n.getMonth() + 1}월 ${n.getDate()}일 (${DOW[n.getDay()]})`;
+    const btn = document.getElementById("startBtn");
+    btn.onclick = () => { document.body.classList.remove("intro-on"); showTab("today"); };
+    btn.focus();   // 키보드 Enter로도 시작할 수 있어요
+  })();
+</script>
+</body>
+</html>
